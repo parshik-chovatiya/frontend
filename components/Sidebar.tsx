@@ -43,12 +43,12 @@ export function Sidebar() {
       <div className="flex-1" />
 
       {/* BOTTOM */}
-      <div className="flex flex-col gap-3 pb-6">
+      <div className="flex flex-col gap-3 ">
         {bottom.map(item => (
           <Item key={item.href} {...item} active={pathname === item.href} />
         ))}
 
-        <div className="mt-4">
+        <div className="mt-4 mb-2">
           <Item
             icon={User}
             label="Profile"
