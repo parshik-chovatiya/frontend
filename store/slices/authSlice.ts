@@ -7,22 +7,17 @@ interface User {
   birthdate: string | null;
   gender: string;
   timezone: string;
+  phone_number: string | null;
   is_onboarded: boolean;
-  date_joined: string;
-  last_login: string | null;
 }
 
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
-  accessToken: null,
-  refreshToken: null,
   isAuthenticated: false,
 };
 
@@ -34,26 +29,17 @@ const authSlice = createSlice({
       state.user = action.payload;
       state.isAuthenticated = true;
     },
-    setAccessToken: (state, action: PayloadAction<string>) => {
-      state.accessToken = action.payload;
-    },
-    setRefreshToken: (state, action: PayloadAction<string>) => {
-      state.refreshToken = action.payload;
-    },
-    setTokens: (state, action: PayloadAction<{ access: string; refresh: string }>) => {
-      state.accessToken = action.payload.access;
-      state.refreshToken = action.payload.refresh;
-    },
-    logout: (state) => {
+    clearUser: (state) => {
       state.user = null;
-      state.accessToken = null;
-      state.refreshToken = null;
       state.isAuthenticated = false;
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+    },
+    updateUser: (state, action: PayloadAction<Partial<User>>) => {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+      }
     },
   },
 });
 
-export const { setUser, setAccessToken, setRefreshToken, setTokens, logout } = authSlice.actions;
+export const { setUser, clearUser, updateUser } = authSlice.actions;
 export default authSlice.reducer;

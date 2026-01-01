@@ -7,7 +7,7 @@ import NameStep from "@/components/onboarding/NameStep";
 import DetailsStep from "@/components/onboarding/DetailsStep";
 import { authApi } from "@/lib/api/authApi";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setUser } from "@/store/slices/authSlice";
+import { setUser } from "@/store/slices/_authSlice";
 import { toast } from "sonner";
 
 interface OnboardingData {

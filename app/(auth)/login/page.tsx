@@ -1,162 +1,95 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { Mail, Lock, ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import { authApi } from "@/lib/api/authApi";
-import { useAppDispatch } from "@/store/hooks";
-import { setUser, setTokens } from "@/store/slices/authSlice";
-import Image from "next/image";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useDispatch, useSelector } from 'react-redux';
+import { setUser } from '@/store/slices/authSlice';
+import { markOnboardingComplete } from '@/store/slices/onboardingSlice';
+import { RootState } from '@/store/store';
+import axiosInstance from '@/lib/axios';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const dispatch = useDispatch();
+  const onboardingData = useSelector((state: RootState) => state.onboarding.data);
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
-      // Call login API
-      const res = await authApi.login({
-        email,
-        password,
-      });
+      const loginResponse = await axiosInstance.post('/auth/login/', formData);
+      const userData = loginResponse.data.user;
 
-      const { user, tokens } = res.data;
+      dispatch(setUser(userData));
 
-      // Save tokens to localStorage
-      localStorage.setItem('access_token', tokens.access);
-      localStorage.setItem('refresh_token', tokens.refresh);
-
-      // Save to Redux
-      dispatch(setTokens({ access: tokens.access, refresh: tokens.refresh }));
-      dispatch(setUser(user));
-
-      toast.success("Login successful");
-
-      // Check if user has completed onboarding
-      if (!user.is_onboarded) {
-        router.push("/onboarding");
-      } else {
-        router.push("/dashboard");
+      if (!userData.is_onboarded && onboardingData) {
+        await axiosInstance.post('/onboarding/', onboardingData);
+        dispatch(markOnboardingComplete());
       }
+
+      router.push('/');
     } catch (err: any) {
-      const errorMsg = err?.response?.data?.error 
-        || err?.response?.data?.detail 
-        || "Login failed";
-      toast.error(errorMsg);
+      setError(err.response?.data?.error || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center lg:text-left">
-            <h1 className="text-3xl font-bold">Welcome Back</h1>
-            <p className="text-muted-foreground mt-2">Sign in to continue to MedAlert</p>
+    <div className="min-h-screen flex items-center justify-center bg-primary/10">
+      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h1 className="text-3xl font-bold mb-6 text-center">Login</h1>
+
+        {error && (
+          <div className="bg-red-100 text-red-600 p-3 rounded mb-4">
+            {error}
           </div>
+        )}
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <Label>Email Address</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="email"
-                  placeholder="johndoe@gmail.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-2">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
-                  Remember me
-                </Label>
-              </div>
-              <Link href="#" className="text-sm text-primary hover:underline">
-                Forgot Password?
-              </Link>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-
-          <div className="text-center text-sm text-muted-foreground">
-            Do not have an account?{" "}
-            <Link href="/register" className="font-medium text-primary hover:underline">
-              Sign up
-            </Link>
-          </div>
-          <div className="flex justify-center">
-            <Button
-              variant="outline"
-              className="gap-2 px-5 py-2 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <Link href="/" className="font-medium">
-                Back to Home
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Side - Image */}
-      <div className="hidden lg:block lg:w-1/2 relative">
-        <div className="absolute m-2 rounded-2xl inset-0 bg-linear-to-br from-primary/20 to-primary/5 shadow-2xl" />
-        <div className="relative h-full flex items-center justify-center p-12">
-          <div className="w-[380px] relative">
-            <Image
-              src="/images/medicin-login.png"
-              alt="Medical Illustration"
-              width={500}
-              height={500}
-              className="object-contain"
-              priority
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Email</label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-        </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Password</label>
+            <input
+              type="password"
+              required
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50"
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+
+        <p className="mt-4 text-center text-sm">
+          Don't have an account?{' '}
+          <Link href="/register" className="text-primary hover:underline">
+            Register
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -20,7 +20,7 @@ const caveat = Caveat({
 
 export const metadata: Metadata = {
   title: "MedAlert",
-  description: "Medicine Reminder System",
+  description: "Medicine Reminder System, Never Miss Your Medication Again",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
